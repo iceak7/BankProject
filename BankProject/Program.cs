@@ -41,19 +41,18 @@ namespace BankProject
                 if (login())
                 {
                     Console.Clear();
-                    Console.WriteLine("Välkommen {0}!", getFirstName(loggedInUserNr));
+                    Console.WriteLine("Välkommen {0}!", GetFirstName(loggedInUserNr));
 
                     bool continueRun = true;
                     while (continueRun)
                     {
                         bool stillLoggedIn = runMenu();
-                        if (stillLoggedIn)
+                        if (!stillLoggedIn)
                         {
                             continueRun = false;
                         }
                         else
                         {
-
                             Console.WriteLine("\nKlicka enter för att komma till huvudmenyn");
                             Console.ReadLine();
                             Console.Clear();
@@ -118,20 +117,11 @@ namespace BankProject
                 {
                     case "1":
                         writeOutAccountAndBalance();
-                        return false;
+                        return true;
                     case "2":
-                        //Run 2
-                        return false;
+                        return transferMoney();
                     case "3":
-                        if (withdrawMoney())
-                        {
-                            return false;
-                        }
-                        else
-                        {
-                            return true;
-                        }
-
+                        return withdrawMoney();
                     case "4":
                         logOut();
                         return false;
@@ -171,7 +161,7 @@ namespace BankProject
 
             bool correctAccNr = false;
             Console.WriteLine("\nVilket konto vill du ta ut pengar ifrån? Skriv kontonumret.");
-            string accountNr="0";
+            string accountNr = "0";
 
             while (!correctAccNr)
             {
@@ -193,9 +183,9 @@ namespace BankProject
                 }
             }
 
-            if(accountNr != "0")
+            if (correctAccNr)
             {
-                int indexOfAccount = bankAccounts.IndexOf( bankAccounts.Find(x => x[0] == accountNr));
+                int indexOfAccount = bankAccounts.IndexOf(bankAccounts.Find(x => x[0] == accountNr));
 
                 Console.WriteLine("\nHur mycket pengar vill du ta ut?");
                 bool correctAmount = false;
@@ -213,13 +203,13 @@ namespace BankProject
                         }
                         int amount = int.Parse(input);
 
-                        if(amount>0 & amount <= balance)
+                        if (amount > 0 & amount <= balance)
                         {
                             correctAmount = true;
 
                             bool correctPin = false;
                             int triesLeft = 3;
-                            while (!correctPin & triesLeft>0)
+                            while (!correctPin & triesLeft > 0)
                             {
                                 Console.WriteLine("\nVänligen mata in din pin.");
                                 string input2 = Console.ReadLine();
@@ -234,15 +224,15 @@ namespace BankProject
                                     pin = input2;
                                 }
 
-                                if (pinAuth(loggedInUserNr, pin))
+                                if (PinAuth(loggedInUserNr, pin))
                                 {
                                     correctPin = true;
                                     balance -= amount;
-                                    bankAccounts[indexOfAccount][3]  = balance.ToString();
+                                    bankAccounts[indexOfAccount][3] = balance.ToString();
 
-                                    Console.WriteLine("\nDu har tagit ut {0}kr från ditt {1} och din nya balans är {2}kr.", amount, bankAccounts[indexOfAccount][2] ,balance);
+                                    Console.WriteLine("\nDu har tagit ut {0}kr från ditt {1} och din nya balans är {2}kr.", amount, bankAccounts[indexOfAccount][2], balance);
                                 }
-                                else if(triesLeft==1)
+                                else if (triesLeft == 1)
                                 {
                                     triesLeft--;
                                     Console.WriteLine("Du har matat in fel pin för många gånger.");
@@ -261,13 +251,13 @@ namespace BankProject
                             Console.WriteLine("Felaktig summa för uttaget. Försök igen. Vill du inte ta ut pengar längre skriv \"Avbryt\".");
                         }
                     }
-                    
-                    catch(Exception e)
+
+                    catch (Exception e)
                     {
                         Console.WriteLine("Felaktig inmatning. Skriv ett heltal. Försök igen. Vill du inte ta ut pengar skriv skriv \"Avbryt\".");
                     }
 
-                    
+
                 }
             }
 
@@ -275,21 +265,206 @@ namespace BankProject
 
         }
 
-        static bool pinAuth(string customerNr, string pin)
+        static bool transferMoney()
+        {
+            writeOutAccountAndBalance();
+
+            bool correctAccNr = false;
+            Console.WriteLine("\nVilket konto vill du överföra ifrån? Skriv kontonumret.");
+            string transferFromAccountNr = "0";
+            string transferToAccountNr = "0";
+
+            while (!correctAccNr)
+            {
+                bool correctAccButNoFunds = false;
+                string input = Console.ReadLine();
+
+                if (input.ToUpper() == "AVBRYT") break;
+
+                foreach (var account in bankAccounts)
+                {
+                    if (account[1] == loggedInUserNr & account[0] == input)
+                    {
+                        if (decimal.Parse(account[3]) >= 1)
+                        {
+                            correctAccNr = true;
+                            transferFromAccountNr = account[0];
+                            break;
+                        }
+                        else
+                        {
+                            correctAccButNoFunds = true;
+                        }
+
+                    }
+                }
+                if (correctAccButNoFunds)
+                {
+                    Console.WriteLine("Kontot du valde har inte tilräckligt med pengar för att föra över till ett annat konto. Vänligen välj ett annat konto. Vill du inte överföra pengar längre skriv \"Avbryt\".");
+                }
+                else if (correctAccNr == false)
+                {
+                    Console.WriteLine("Du matade in ett felaktigt kontonummer. Vänligen mata in kontonumret igen. Vill du inte överföra pengar längre skriv \"Avbryt\".");
+                }
+            }
+
+            if (correctAccNr)
+            {
+                correctAccNr = false;
+                Console.WriteLine("\nVilket konto vill du överföra pengar till? Skriv kontonumret.");
+
+                while (!correctAccNr)
+                {
+                    string input = Console.ReadLine();
+                    bool sameAccount = false;
+
+                    if (input.ToUpper() == "AVBRYT") break;
+
+                    if (transferFromAccountNr == input)
+                    {
+                        sameAccount = true;
+                    }
+                    else
+                    {
+                        foreach (var account in bankAccounts)
+                        {
+                            if (account[1] == loggedInUserNr & account[0] == input)
+                            {
+                                correctAccNr = true;
+                                transferToAccountNr = account[0];
+                                break;
+                            }
+                        }
+                    }
+
+                    if (sameAccount)
+                    {
+                        Console.WriteLine("Du måste välja ett annat konto. Vänligen mata in kontonumret igen. Vill du inte överföra pengar längre skriv \"Avbryt\".");
+                    }
+                    else if (correctAccNr == false)
+                    {
+                        Console.WriteLine("Du matade in ett felaktigt kontonummer. Vänligen mata in kontonumret igen. Vill du inte överföra pengar längre skriv \"Avbryt\".");
+                    }
+                }
+            }
+
+            if (correctAccNr)
+            {
+
+                Console.WriteLine("\nHur mycket pengar vill du överföra?");
+                bool correctAmount = false;
+
+                int indexOfFromAccount = bankAccounts.IndexOf(bankAccounts.Find(x => x[0] == transferFromAccountNr));
+                int indexOfToAccount = bankAccounts.IndexOf(bankAccounts.Find(x => x[0] == transferToAccountNr));
+
+
+                while (!correctAmount)
+                {
+                    decimal balance = decimal.Parse(bankAccounts[indexOfFromAccount][3]);
+
+                    try
+                    {
+                        string input = Console.ReadLine();
+
+                        if (input.ToUpper() == "AVBRYT")
+                        {
+                            return true;
+                        }
+                        int amount = int.Parse(input);
+
+                        if (amount > 0 & amount <= balance)
+                        {
+                            correctAmount = true;
+
+                            bool correctPin = false;
+                            int triesLeft = 3;
+                            while (!correctPin & triesLeft > 0)
+                            {
+                                Console.WriteLine("\nVänligen mata in din pin.");
+                                string input2 = Console.ReadLine();
+                                string pin;
+
+                                if (input.ToUpper() == "AVBRYT")
+                                {
+                                    return true;
+                                }
+                                else
+                                {
+                                    pin = input2;
+                                }
+
+                                if (PinAuth(loggedInUserNr, pin))
+                                {
+                                    correctPin = true;
+                                    balance -= amount;
+                                    bankAccounts[indexOfFromAccount][3] = balance.ToString();
+
+                                    decimal balance2 = decimal.Parse(bankAccounts[indexOfToAccount][3]) + amount;
+                                    bankAccounts[indexOfToAccount][3] = balance2.ToString();
+
+
+                                    Console.WriteLine("\nDu har överfört {0}kr från ditt {1} till ditt {2}. Din nya balans på ditt {1} är och {3} och din nya balans på ditt {2} är {4}kr.", amount, bankAccounts[indexOfFromAccount][2], bankAccounts[indexOfToAccount][2] ,balance, balance2);
+                                }
+                                else if (triesLeft == 1)
+                                {
+                                    triesLeft--;
+                                    Console.WriteLine("Du har matat in fel pin för många gånger.");
+                                    loggedInUserNr = null;
+                                    return false;
+                                }
+                                else
+                                {
+                                    Console.WriteLine("Felaktig pin. Vill du inte överföra pengar skriv \"Avbryt\".");
+                                    triesLeft--;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine("Felaktig summa för uttaget. Försök igen. Vill du inte överföra pengar längre skriv \"Avbryt\".");
+                        }
+                    }
+
+                    catch (Exception e)
+                    {
+                        Console.WriteLine("Felaktig inmatning. Skriv ett heltal. Försök igen. Vill du inte ta överföre pengar skriv \"Avbryt\".");
+                    }
+
+                }
+
+            }
+            return true;
+        }
+
+
+        static string[] CorrectAccountNr(string accountNrInput, string userNr = "0")
+        {
+            foreach (var account in bankAccounts)
+            {
+                if (account[0] == accountNrInput)
+                {
+                    return account;
+                }
+            }
+
+            return null;
+        }
+
+        static bool PinAuth(string customerNr, string pin)
         {
             for (int i = 0; i < users.GetLength(0); i++)
             {
-                if (customerNr == users[i, 1] )
+                if (customerNr == users[i, 1])
                 {
-                    if(pin == users[i, 4])
+                    if (pin == users[i, 4])
                     {
                         return true;
-                    }                  
+                    }
                 }
             }
             return false;
         }
-        static string getFirstName(string customerNr)
+        static string GetFirstName(string customerNr)
         {
             for (int i = 0; i < users.GetLength(0); i++)
             {
