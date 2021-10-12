@@ -31,6 +31,8 @@ namespace BankProject
         };
         static string loggedInUserNr;
 
+        static int firstFreeAccountNr = 124;
+
         static void Main(string[] args)
         {
             Console.WriteLine("Välkommen till banken!");
@@ -38,7 +40,7 @@ namespace BankProject
             bool continueRunning = true;
             while (continueRunning)
             {
-                if (login())
+                if (Login())
                 {
                     Console.Clear();
                     Console.WriteLine("Välkommen {0}!", GetFirstName(loggedInUserNr));
@@ -46,16 +48,16 @@ namespace BankProject
                     bool continueRun = true;
                     while (continueRun)
                     {
-                        bool stillLoggedIn = runMenu();
-                        if (!stillLoggedIn)
-                        {
-                            continueRun = false;
-                        }
-                        else
+                        bool stillLoggedIn = RunMenu();
+                        if (stillLoggedIn)
                         {
                             Console.WriteLine("\nKlicka enter för att komma till huvudmenyn");
                             Console.ReadLine();
                             Console.Clear();
+                        }
+                        else
+                        {
+                            continueRun = false;
                         }
 
                     }
@@ -64,7 +66,7 @@ namespace BankProject
             }
         }
 
-        static bool login()
+        static bool Login()
         {
             int försökKvar = 3;
             while (försökKvar != 0)
@@ -100,7 +102,7 @@ namespace BankProject
         }
 
         //returns false if user should get logged out
-        static bool runMenu()
+        static bool RunMenu()
         {
             bool noValidAnswer = true;
             while (noValidAnswer)
@@ -108,7 +110,9 @@ namespace BankProject
                 Console.WriteLine("\n1.Se dina konton och saldo");
                 Console.WriteLine("2.Överföring mellan konton");
                 Console.WriteLine("3.Ta ut pengar");
-                Console.WriteLine("4.Logga ut\n");
+                Console.WriteLine("4.Sätta in pengar");
+                Console.WriteLine("5.Öppna nytt konto");
+                Console.WriteLine("6.Logga ut\n");
 
 
                 string input = Console.ReadLine();
@@ -116,14 +120,19 @@ namespace BankProject
                 switch (input)
                 {
                     case "1":
-                        writeOutAccountAndBalance();
+                        WriteOutAccountAndBalance();
                         return true;
                     case "2":
-                        return transferMoney();
+                        return TransferMoney();
                     case "3":
-                        return withdrawMoney();
+                        return WithdrawMoney();
                     case "4":
-                        logOut();
+                        return DepositMoney();
+                    case "5":
+                        OpenNewAccount();
+                        return true;
+                    case "6":
+                        LogOut();
                         return false;
                     default:
                         Console.Clear();
@@ -134,14 +143,14 @@ namespace BankProject
             return false;
         }
 
-        static void logOut()
+        static void LogOut()
         {
             loggedInUserNr = null;
             Console.Clear();
             Console.WriteLine("Du är nu utloggad.");
         }
 
-        static void writeOutAccountAndBalance()
+        static void WriteOutAccountAndBalance()
         {
             Console.Clear();
             Console.WriteLine("Dina konton");
@@ -155,9 +164,9 @@ namespace BankProject
         }
 
         //Returns false if the user entered wrong pin too many times
-        static bool withdrawMoney()
+        static bool WithdrawMoney()
         {
-            writeOutAccountAndBalance();
+            WriteOutAccountAndBalance();
 
             bool correctAccNr = false;
             Console.WriteLine("\nVilket konto vill du ta ut pengar ifrån? Skriv kontonumret.");
@@ -187,7 +196,7 @@ namespace BankProject
             {
                 int indexOfAccount = bankAccounts.IndexOf(bankAccounts.Find(x => x[0] == accountNr));
 
-                Console.WriteLine("\nHur mycket pengar vill du ta ut?");
+                Console.WriteLine("\nHur mycket pengar vill du ta ut? Du måste ta ut minst 10kr och endast hela kronor.");
                 bool correctAmount = false;
                 while (!correctAmount)
                 {
@@ -201,17 +210,18 @@ namespace BankProject
                         {
                             return true;
                         }
-                        int amount = int.Parse(input);
 
-                        if (amount > 0 & amount <= balance)
+                        decimal amount = decimal.Parse(input);
+
+                        if (amount >= 10 & amount % 1 == 0 & amount <= balance)
                         {
                             correctAmount = true;
 
                             bool correctPin = false;
                             int triesLeft = 3;
+                            Console.WriteLine("\nVänligen mata in din pin.");
                             while (!correctPin & triesLeft > 0)
                             {
-                                Console.WriteLine("\nVänligen mata in din pin.");
                                 string input2 = Console.ReadLine();
                                 string pin;
 
@@ -241,33 +251,137 @@ namespace BankProject
                                 }
                                 else
                                 {
-                                    Console.WriteLine("Felaktig pin. Vill du inte ta ut pengar skriv skriv \"Avbryt\".");
+                                    Console.WriteLine("Felaktig pin. Mata in den igen. Vill du inte ta ut pengar skriv skriv \"Avbryt\".");
                                     triesLeft--;
                                 }
                             }
                         }
                         else
                         {
-                            Console.WriteLine("Felaktig summa för uttaget. Försök igen. Vill du inte ta ut pengar längre skriv \"Avbryt\".");
+                            Console.WriteLine("Felaktig summa för uttaget. Du måste ta ut minst 10kr och endast hela kronor. Försök igen. Vill du inte ta ut pengar längre skriv \"Avbryt\".");
                         }
                     }
 
                     catch (Exception e)
                     {
-                        Console.WriteLine("Felaktig inmatning. Skriv ett heltal. Försök igen. Vill du inte ta ut pengar skriv skriv \"Avbryt\".");
+                        Console.WriteLine("Felaktig inmatning.  Försök igen. Vill du inte ta ut pengar skriv \"Avbryt\".");
+                    }
+                }
+            }
+            return true;
+        }
+
+        static bool DepositMoney()
+        {
+            WriteOutAccountAndBalance();
+            bool correctAccNr = false;
+            Console.WriteLine("\nVilket konto vill du sätta in pengar på? Skriv kontonumret.");
+            string accountNr = "0";
+
+            while (!correctAccNr)
+            {
+                string input = Console.ReadLine();
+                if (input.ToUpper() == "AVBRYT") break;
+                foreach (var account in bankAccounts)
+                {
+                    if (account[1] == loggedInUserNr & account[0] == input)
+                    {
+                        correctAccNr = true;
+                        accountNr = account[0];
+                        break;
+                    }
+                }
+
+                if (correctAccNr == false)
+                {
+                    Console.WriteLine("Du matade in ett felaktigt kontonummer. Vänligen mata in kontonumret igen. Vill du inte ta ut pengar längre skriv \"Avbryt\".");
+                }
+            }
+
+            if (correctAccNr)
+            {
+                int indexOfAccount = bankAccounts.IndexOf(bankAccounts.Find(x => x[0] == accountNr));
+
+                Console.WriteLine("\nHur mycket pengar vill du sätta in? Du måsta sätta in minst 10kr och endast hela kronor.");
+                bool correctAmount = false;
+                while (!correctAmount)
+                {
+                    decimal balance = decimal.Parse(bankAccounts[indexOfAccount][3]);
+
+                    try
+                    {
+                        string input = Console.ReadLine();
+
+                        if (input.ToUpper() == "AVBRYT")
+                        {
+                            return true;
+                        }
+
+                        decimal amount = decimal.Parse(input);
+
+                        if (amount >= 10 & amount%1==0 )
+                        {
+                            correctAmount = true;
+
+                            bool correctPin = false;
+                            int triesLeft = 3;
+                            Console.WriteLine("\nVänligen mata in din pin.");
+                            while (!correctPin & triesLeft > 0)
+                            {
+                                string input2 = Console.ReadLine();
+                                string pin;
+
+                                if (input.ToUpper() == "AVBRYT")
+                                {
+                                    return true;
+                                }
+                                else
+                                {
+                                    pin = input2;
+                                }
+
+                                if (PinAuth(loggedInUserNr, pin))
+                                {
+                                    correctPin = true;
+                                    balance += amount;
+                                    bankAccounts[indexOfAccount][3] = balance.ToString();
+
+                                    Console.WriteLine("\nDu har satt in {0}kr på ditt {1} och din nya balans är {2}kr.", amount, bankAccounts[indexOfAccount][2], balance);
+                                }
+                                else if (triesLeft == 1)
+                                {
+                                    triesLeft--;
+                                    Console.WriteLine("Du har matat in fel pin för många gånger.");
+                                    loggedInUserNr = null;
+                                    return false;
+                                }
+                                else
+                                {
+                                    Console.WriteLine("Felaktig pin. Mata in den igen. Vill du inte ta ut pengar skriv skriv \"Avbryt\".");
+                                    triesLeft--;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine("Felaktig summa för insättningen. Du måste ta ut minst 10kr och endast hela kronor. Försök igen. Vill du inte ta ut pengar längre skriv \"Avbryt\".");
+                        }
                     }
 
-
+                    catch (Exception e)
+                    {
+                        Console.WriteLine(e.Message);
+                        Console.WriteLine("Felaktig inmatning. Försök igen. Vill du inte ta ut pengar skriv \"Avbryt\".");
+                    }
                 }
             }
 
             return true;
-
         }
 
-        static bool transferMoney()
+        static bool TransferMoney()
         {
-            writeOutAccountAndBalance();
+            WriteOutAccountAndBalance();
 
             bool correctAccNr = false;
             Console.WriteLine("\nVilket konto vill du överföra ifrån? Skriv kontonumret.");
@@ -378,9 +492,9 @@ namespace BankProject
 
                             bool correctPin = false;
                             int triesLeft = 3;
+                            Console.WriteLine("\nVänligen mata in din pin.");
                             while (!correctPin & triesLeft > 0)
-                            {
-                                Console.WriteLine("\nVänligen mata in din pin.");
+                            {                               
                                 string input2 = Console.ReadLine();
                                 string pin;
 
@@ -414,7 +528,7 @@ namespace BankProject
                                 }
                                 else
                                 {
-                                    Console.WriteLine("Felaktig pin. Vill du inte överföra pengar skriv \"Avbryt\".");
+                                    Console.WriteLine("Felaktig pin. Mata in den igen. Vill du inte överföra pengar skriv \"Avbryt\".");
                                     triesLeft--;
                                 }
                             }
@@ -427,7 +541,7 @@ namespace BankProject
 
                     catch (Exception e)
                     {
-                        Console.WriteLine("Felaktig inmatning. Skriv ett heltal. Försök igen. Vill du inte ta överföre pengar skriv \"Avbryt\".");
+                        Console.WriteLine("Felaktig inmatning. Skriv ett heltal. Försök igen. Vill du inte ta överföra pengar skriv \"Avbryt\".");
                     }
 
                 }
@@ -436,18 +550,46 @@ namespace BankProject
             return true;
         }
 
-
-        static string[] CorrectAccountNr(string accountNrInput, string userNr = "0")
+        static void OpenNewAccount()
         {
-            foreach (var account in bankAccounts)
-            {
-                if (account[0] == accountNrInput)
-                {
-                    return account;
-                }
-            }
+            Console.Clear();
 
-            return null;
+            Console.WriteLine("Vad ska ditt konto heta? Det måste sluta på \"konto\".");
+
+            bool correctAccountName = false;
+
+            while (!correctAccountName)
+            {
+                try
+                {
+                    string input = Console.ReadLine();
+
+                    if (input.ToUpper() == "AVBRYT")
+                    {
+                        break;
+                    }
+
+                    string lastFiveLetters = input.Substring(input.Length - 5);
+
+                    if (lastFiveLetters.ToUpper() == "KONTO")
+                    {
+                        bankAccounts.Add(new string[] { firstFreeAccountNr.ToString(), loggedInUserNr.ToString(), input, "0,00" });
+                        firstFreeAccountNr++;
+                        correctAccountName = true;
+                        Console.WriteLine("\nDu har nu öppnat ett konto med namnet \"{0}\".", input);
+                    }
+                    else
+                    {
+                        Console.WriteLine("\nNamnet på ditt konto måste sluta på \"konto\". Skriv in kontonamnet igen. Vill du avbryta öppnandet av konto skriv \"avbryt\".");
+                    }
+
+                }
+                catch
+                {
+                    Console.WriteLine("\nNamnet på ditt konto måste sluta på \"konto\". Skriv in kontonamnet igen. Vill du avbryta öppnandet av konto skriv \"avbryt\".");
+                }
+
+            }
         }
 
         static bool PinAuth(string customerNr, string pin)
